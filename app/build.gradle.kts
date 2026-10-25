@@ -15,12 +15,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.unixshells.devbrowser"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.unixshells.devbrowser"
-        minSdk = 35
-        targetSdk = 35
+        minSdk = 24
+        targetSdk = 34
         versionCode = 3
         versionName = "0.1.0"
     }
