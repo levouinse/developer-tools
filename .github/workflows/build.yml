@@ -33,18 +33,15 @@ jobs:
         run: |
           mkdir -p app/src/main/assets/front_end
 
-          # Jalankan script copy-devtools jika tersedia
           if [ -f "scripts/copy-devtools.sh" ]; then
             chmod +x scripts/copy-devtools.sh
             ./scripts/copy-devtools.sh || true
           fi
 
-          # Copy dari store-assets jika folder ada
           if [ -d "store-assets/front_end" ]; then
             cp -r store-assets/front_end/* app/src/main/assets/front_end/
           fi
 
-          # Fallback inspector.html agar WebView tidak crash
           if [ ! -f "app/src/main/assets/front_end/inspector.html" ]; then
             echo '<!DOCTYPE html><html><head><title>DevTools</title></head><body><h1>DevTools Ready</h1></body></html>' > app/src/main/assets/front_end/inspector.html
           fi
@@ -61,12 +58,15 @@ jobs:
           name: developer-tools-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Create GitHub Release and Upload APK
+      - name: Create or Update GitHub Release (v1.0.0)
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: v1.0.0
+          name: Release v1.0.0
+          body: |
+            Automated build output from GitHub Actions.
+            Updated on: ${{ github.sha }}
           files: app/build/outputs/apk/debug/app-debug.apk
-          name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
         env:
