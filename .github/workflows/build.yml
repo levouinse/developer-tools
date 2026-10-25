@@ -20,16 +20,17 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Fix Hardcoded org.gradle.java.home in gradle.properties
+        run: |
+          # Menghapus baris org.gradle.java.home supaya Gradle memakai Java dari GitHub Actions Runner
+          sed -i '/org.gradle.java.home/d' gradle.properties
+
       - name: Setup Mock DevTools Assets
         run: |
-          # Buat direktori target tempat app membaca assets devtools
           mkdir -p app/src/main/assets/front_end
-
-          # Cek jika folder source devtools lokal/store-assets ada
           if [ -d "store-assets/front_end" ]; then
             cp -r store-assets/front_end/* app/src/main/assets/front_end/
           else
-            # Unduh DevTools frontend siap pakai langsung dari Chrome DevTools release
             echo "Downloading prebuilt Chrome DevTools..."
             curl -sL https://chrome-devtools-frontend.appspot.com/serve_file/@8e718f4a132e01df28003fbe1b3f9479e0a05891/inspector.html -o app/src/main/assets/front_end/inspector.html || true
           fi
