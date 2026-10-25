@@ -1,13 +1,17 @@
-name: Build Android APK
+name: Build and Release Android APK
 
 on:
   push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+    tags:
+      - 'v*' # Otomatis jalan dan bikin Release kalau push tag (contoh: v1.0.0)
+  workflow_dispatch: # Bisa dijalankan manual kapan saja dari tab Actions
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Wajib ada izin ini agar GitHub Actions bisa mempublikasikan Release
 
     steps:
       - name: Checkout Repository
@@ -20,10 +24,15 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Fix Hardcoded org.gradle.java.home in gradle.properties
+      - name: Fix Hardcoded org.gradle.java.home
         run: |
-          # Menghapus baris org.gradle.java.home supaya Gradle memakai Java dari GitHub Actions Runner
           sed -i '/org.gradle.java.home/d' gradle.properties
+
+      - name: Adjust SDK Version for Android 11 Compatibility
+        run: |
+          # Mengubah targetSdk & compileSdk agar kompatibel dan tidak Parse Error di Android 11
+          sed -i 's/targetSdk = 35/targetSdk = 30/g' app/build.gradle.kts || true
+          sed -i 's/compileSdk = 35/compileSdk = 34/g' app/build.gradle.kts || true
 
       - name: Setup Mock DevTools Assets
         run: |
@@ -41,8 +50,19 @@ jobs:
       - name: Build APK with Gradle
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload APK Artifact
+      - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: developer-tools-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: app/build/outputs/apk/debug/app-debug.apk
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
