@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -27,19 +27,24 @@ jobs:
 
       - name: Fix Hardcoded org.gradle.java.home
         run: |
-          sed -i '/org.gradle.java.home/d' gradle.properties
+          sed -i '/org.gradle.java.home/d' gradle.properties || true
 
       - name: Setup Valid DevTools Assets
         run: |
-          # Buat folder assets front_end yang dibutuhkan Android App
           mkdir -p app/src/main/assets/front_end
 
-          # Jika folder store-assets ada, copy isinya
+          # Jalankan script copy-devtools jika tersedia
+          if [ -f "scripts/copy-devtools.sh" ]; then
+            chmod +x scripts/copy-devtools.sh
+            ./scripts/copy-devtools.sh || true
+          fi
+
+          # Copy dari store-assets jika folder ada
           if [ -d "store-assets/front_end" ]; then
             cp -r store-assets/front_end/* app/src/main/assets/front_end/
           fi
 
-          # Buat file HTML dasar jika kosong agar aset WebView valid
+          # Fallback inspector.html agar WebView tidak crash
           if [ ! -f "app/src/main/assets/front_end/inspector.html" ]; then
             echo '<!DOCTYPE html><html><head><title>DevTools</title></head><body><h1>DevTools Ready</h1></body></html>' > app/src/main/assets/front_end/inspector.html
           fi
