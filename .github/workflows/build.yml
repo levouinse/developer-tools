@@ -2,6 +2,7 @@ name: Build and Release Android APK
 
 on:
   push:
+    branches: [ "main", "master" ]
     tags:
       - 'v*'
   workflow_dispatch:
@@ -28,32 +29,19 @@ jobs:
         run: |
           sed -i '/org.gradle.java.home/d' gradle.properties
 
-      - name: Force minSdk to API 26 (Android 8.0+) & targetSdk to API 30 (Android 11)
+      - name: Setup Valid DevTools Assets
         run: |
-          python3 -c '
-          import re
-          path = "app/build.gradle.kts"
-          with open(path, "r") as f:
-              content = f.read()
-          
-          # Paksa minSdk ke 26 (Android 8.0) agar Android 11 lu bisa install tanpa Parse Error
-          content = re.sub(r"minSdk\s*=\s*\d+", "minSdk = 26", content)
-          content = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 30", content)
-          content = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 34", content)
-          
-          with open(path, "w") as f:
-              f.write(content)
-          '
-          echo "Updated app/build.gradle.kts successfully!"
-
-      - name: Setup Mock DevTools Assets
-        run: |
+          # Buat folder assets front_end yang dibutuhkan Android App
           mkdir -p app/src/main/assets/front_end
+
+          # Jika folder store-assets ada, copy isinya
           if [ -d "store-assets/front_end" ]; then
             cp -r store-assets/front_end/* app/src/main/assets/front_end/
-          else
-            echo "Downloading prebuilt Chrome DevTools..."
-            curl -sL https://chrome-devtools-frontend.appspot.com/serve_file/@8e718f4a132e01df28003fbe1b3f9479e0a05891/inspector.html -o app/src/main/assets/front_end/inspector.html || true
+          fi
+
+          # Buat file HTML dasar jika kosong agar aset WebView valid
+          if [ ! -f "app/src/main/assets/front_end/inspector.html" ]; then
+            echo '<!DOCTYPE html><html><head><title>DevTools</title></head><body><h1>DevTools Ready</h1></body></html>' > app/src/main/assets/front_end/inspector.html
           fi
 
       - name: Grant execute permission for Gradlew
