@@ -3,15 +3,15 @@ name: Build and Release Android APK
 on:
   push:
     tags:
-      - 'v*' # Otomatis jalan dan bikin Release kalau push tag (contoh: v1.0.0)
-  workflow_dispatch: # Bisa dijalankan manual kapan saja dari tab Actions
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # Wajib ada izin ini agar GitHub Actions bisa mempublikasikan Release
+      contents: write
 
     steps:
       - name: Checkout Repository
@@ -28,11 +28,23 @@ jobs:
         run: |
           sed -i '/org.gradle.java.home/d' gradle.properties
 
-      - name: Adjust SDK Version for Android 11 Compatibility
+      - name: Force minSdk to API 26 (Android 8.0+) & targetSdk to API 30 (Android 11)
         run: |
-          # Mengubah targetSdk & compileSdk agar kompatibel dan tidak Parse Error di Android 11
-          sed -i 's/targetSdk = 35/targetSdk = 30/g' app/build.gradle.kts || true
-          sed -i 's/compileSdk = 35/compileSdk = 34/g' app/build.gradle.kts || true
+          python3 -c '
+          import re
+          path = "app/build.gradle.kts"
+          with open(path, "r") as f:
+              content = f.read()
+          
+          # Paksa minSdk ke 26 (Android 8.0) agar Android 11 lu bisa install tanpa Parse Error
+          content = re.sub(r"minSdk\s*=\s*\d+", "minSdk = 26", content)
+          content = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 30", content)
+          content = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 34", content)
+          
+          with open(path, "w") as f:
+              f.write(content)
+          '
+          echo "Updated app/build.gradle.kts successfully!"
 
       - name: Setup Mock DevTools Assets
         run: |
